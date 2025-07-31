@@ -1,0 +1,33 @@
+{
+  "name": "fintech-chatbot",
+  "version": "1.0.0",
+  "description": "Simple AI fintech chatbot with custom NLP engine",
+  "main": "chatbot.js",
+  "scripts": {
+    "start": "node chatbot.js",
+    "smart": "node smart-chatbot.js",
+    "advanced": "node advanced-finbot.js",
+    "intelligent": "node intelligent-finbot.js",
+    "demo": "node app-integration-example.js",
+    "demo-intelligent": "node demo-intelligent.js",
+    "test-commands": "node test-commands.js",
+    "test-clean": "node test-clean-commands.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["chatbot", "fintech", "ai", "nlp"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "natural": "^6.0.4",
+    "sqlite3": "^5.1.6",
+    "ml-regression": "^6.0.1",
+    "simple-statistics": "^7.8.3",
+    "colors": "^1.4.0",
+    "moment": "^2.29.4",
+    "axios": "^1.6.0",
+    "sentiment": "^5.0.2",
+    "compromise": "^14.10.0",
+    "node-cron": "^3.0.3",
+    "uuid": "^9.0.1"
+  }
+}
