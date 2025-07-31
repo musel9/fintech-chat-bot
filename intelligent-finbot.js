@@ -234,6 +234,7 @@ class IntelligentFintechAI {
 
     this.classifier.train();
     console.log('🧠 Advanced NLP model trained with 12 intelligent intents'.yellow);
+    return Promise.resolve();
   }
 
   async buildEnhancedPredictiveModels() {
@@ -641,7 +642,14 @@ class IntelligentFintechAI {
     try {
       // Enhanced intent classification with context
       const intent = this.classifyWithAdvancedContext(input);
-      const confidence = Math.max(...this.classifier.getClassifications(input).map(c => c.value)) * 100;
+      let confidence = 0;
+      try {
+        const classifications = this.classifier.getClassifications(input);
+        confidence = Math.max(...classifications.map(c => c.value)) * 100;
+      } catch (classError) {
+        console.warn('Classifier not properly trained, using fallback');
+        confidence = 50; // Default confidence
+      }
       
       // Extract entities and context
       const doc = nlp(input);
@@ -758,7 +766,25 @@ class IntelligentFintechAI {
   }
 
   classifyWithAdvancedContext(input) {
-    const baseIntent = this.classifier.classify(input);
+    let baseIntent;
+    try {
+      baseIntent = this.classifier.classify(input);
+    } catch (error) {
+      console.warn('Classifier not trained, using default intent detection');
+      // Simple keyword-based fallback
+      const lowerInput = input.toLowerCase();
+      if (lowerInput.includes('balance') || lowerInput.includes('account')) {
+        baseIntent = 'balance_inquiry';
+      } else if (lowerInput.includes('market') || lowerInput.includes('price') || lowerInput.includes('stock')) {
+        baseIntent = 'investment_inquiry';
+      } else if (lowerInput.includes('transaction') || lowerInput.includes('history')) {
+        baseIntent = 'transaction_analysis';
+      } else if (lowerInput.includes('spending') || lowerInput.includes('expense')) {
+        baseIntent = 'spending_analysis';
+      } else {
+        baseIntent = 'financial_advice';
+      }
+    }
     
     // Consider conversation context and user history
     const recentIntents = this.conversationHistory
@@ -969,13 +995,66 @@ class IntelligentFintechAI {
       response += `• Consider high-yield savings account\n`;
       response += `• Track progress monthly\n`;
     } else {
-      response += `🎯 Common Savings Goals:\n`;
-      response += `• Emergency Fund: 6 months expenses\n`;
-      response += `• Vacation: $3,000 - $10,000\n`;
-      response += `• Car Down Payment: $5,000 - $15,000\n`;
-      response += `• House Down Payment: $20,000 - $100,000\n\n`;
+      // Create comprehensive savings plan based on current financial situation
+      const accounts = await this.getAccountBalance();
+      const transactions = await this.getRecentTransactions(null, 90);
+      const monthlyIncome = transactions
+        .filter(t => t.transaction_type === 'Deposit')
+        .reduce((sum, t) => sum + t.amount, 0) / 3;
+      const monthlyExpenses = transactions
+        .filter(t => ['Withdrawal', 'Bill Payment', 'Shopping', 'Dining', 'Transportation', 'Healthcare'].includes(t.transaction_type))
+        .reduce((sum, t) => sum + Math.abs(t.amount), 0) / 3;
       
-      response += `💡 Tell me your specific goal amount for personalized planning!\n`;
+      const currentSavings = accounts
+        .filter(acc => acc.account_type === 'Savings')
+        .reduce((sum, acc) => sum + this.convertToUSD(acc.balance, acc.currency), 0);
+      
+      const monthlySurplus = monthlyIncome - monthlyExpenses;
+      const recommendedSavingsRate = Math.min(0.3, Math.max(0.1, monthlySurplus / monthlyIncome));
+      const targetMonthlySavings = monthlyIncome * recommendedSavingsRate;
+      
+      response += `📊 PERSONALIZED SAVINGS PLAN\n\n`;
+      response += `💰 Current Financial Overview:\n`;
+      response += `• Monthly Income: $${monthlyIncome.toLocaleString()}\n`;
+      response += `• Monthly Expenses: $${monthlyExpenses.toLocaleString()}\n`;
+      response += `• Current Savings: $${currentSavings.toLocaleString()}\n`;
+      response += `• Monthly Surplus: $${monthlySurplus.toLocaleString()}\n\n`;
+      
+      response += `🎯 RECOMMENDED SAVINGS GOALS:\n\n`;
+      
+      // Emergency Fund
+      const emergencyTarget = monthlyExpenses * 6;
+      const emergencyMonths = Math.ceil((emergencyTarget - currentSavings) / targetMonthlySavings);
+      response += `🚨 1. EMERGENCY FUND (Priority: HIGH)\n`;
+      response += `   Target: $${emergencyTarget.toLocaleString()} (6 months expenses)\n`;
+      response += `   Time to goal: ${emergencyMonths > 0 ? emergencyMonths + ' months' : 'Already achieved!'}\n\n`;
+      
+      // High-yield Savings
+      const highYieldTarget = currentSavings * 1.05; // 5% growth
+      response += `📈 2. HIGH-YIELD SAVINGS OPTIMIZATION\n`;
+      response += `   Move to 4.5% APY account\n`;
+      response += `   Potential annual gain: $${(currentSavings * 0.045).toLocaleString()}\n\n`;
+      
+      // Retirement
+      const retirementTarget = monthlyIncome * 0.15;
+      response += `🏖️ 3. RETIREMENT SAVINGS (Priority: HIGH)\n`;
+      response += `   Target: $${retirementTarget.toLocaleString()}/month (15% of income)\n`;
+      response += `   Consider 401k match + IRA\n\n`;
+      
+      // Short-term Goals
+      response += `🎁 4. SHORT-TERM GOALS\n`;
+      response += `   • Vacation Fund: $${(monthlyIncome * 0.05).toLocaleString()}/month\n`;
+      response += `   • Technology Upgrade: $${(monthlyIncome * 0.03).toLocaleString()}/month\n`;
+      response += `   • Gift Fund: $${(monthlyIncome * 0.02).toLocaleString()}/month\n\n`;
+      
+      response += `💡 AUTOMATED SAVINGS STRATEGY:\n`;
+      response += `• Set up automatic transfer: $${targetMonthlySavings.toLocaleString()}/month\n`;
+      response += `• Use 50/30/20 rule: 50% needs, 30% wants, 20% savings\n`;
+      response += `• Open high-yield savings (4.5% APY)\n`;
+      response += `• Consider investment account for long-term goals\n`;
+      response += `• Review and adjust quarterly\n\n`;
+      
+      response += `🎯 Tell me your specific goal amount for detailed planning!\n`;
     }
     
     return response;
@@ -1526,6 +1605,7 @@ async function startIntelligentChatbot() {
   
   try {
     await finbot.initializeUser();
+    await finbot.initializeIntelligentAI();
     console.log('✅ Intelligent AI systems fully loaded and ready!'.green);
     console.log('🎯 Advanced financial intelligence at your service...'.yellow);
     console.log('💬 Ask me anything about your finances!'.blue);
@@ -1551,15 +1631,20 @@ async function startIntelligentChatbot() {
       }
       
       if (input.trim()) {
-        console.log('🧠 Processing with advanced AI intelligence...'.yellow);
-        const startTime = Date.now();
-        
-        const response = await finbot.processIntelligentInput(input);
-        
-        const processingTime = Date.now() - startTime;
-        console.log(`\nBot: ${response}`);
-        console.log(`\n⚡ Processed in ${processingTime}ms`.gray);
-        console.log('');
+        try {
+          console.log('🧠 Processing with advanced AI intelligence...'.yellow);
+          const startTime = Date.now();
+          
+          const response = await finbot.processIntelligentInput(input);
+          
+          const processingTime = Date.now() - startTime;
+          console.log(`\nBot: ${response}`);
+          console.log(`\n⚡ Processed in ${processingTime}ms`.gray);
+          console.log('');
+        } catch (error) {
+          console.error('❌ Error processing request:'.red, error.message);
+          console.log('💡 Please try again with a different question.'.cyan);
+        }
       }
       
       askQuestion();
