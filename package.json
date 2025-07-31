@@ -2,9 +2,11 @@
   "name": "fintech-chatbot",
   "version": "1.0.0",
   "description": "Enhanced AI Financial Advisor with comprehensive investment guidance, budget planning, and personalized financial recommendations",
-  "main": "chatbot.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node chatbot.js",
+    "start": "node server.js",
+    "dev": "node server.js",
+    "local": "node chatbot.js",
     "smart": "node smart-chatbot.js",
     "advanced": "node advanced-finbot.js",
     "intelligent": "node intelligent-finbot.js",
@@ -20,6 +22,8 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
     "natural": "^6.0.4",
     "sqlite3": "^5.1.6",
     "ml-regression": "^6.0.1",
@@ -31,5 +35,8 @@
     "compromise": "^14.10.0",
     "node-cron": "^3.0.3",
     "uuid": "^9.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }
