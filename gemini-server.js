@@ -23,28 +23,11 @@ if (process.env.GEMINI_API_KEY) {
   process.exit(1);
 }
 
-// Mock financial data gathering (replace with your actual implementation)
-async function getMockFinancialData() {
-  return {
-    balance: [
-      { account_type: 'Checking', balance: 5240, currency: 'USD' },
-      { account_type: 'Savings', balance: 8180, currency: 'USD' },
-      { account_type: 'Investment', balance: 2000, currency: 'USD' }
-    ],
-    transactions: [
-      { amount: -120, description: 'Grocery Store Purchase', transaction_type: 'Debit', transaction_date: '2024-01-15' },
-      { amount: -45, description: 'Gas Station Fill-up', transaction_type: 'Debit', transaction_date: '2024-01-14' },
-      { amount: -35, description: 'Coffee Shop', transaction_type: 'Debit', transaction_date: '2024-01-14' },
-      { amount: 2500, description: 'Monthly Salary Deposit', transaction_type: 'Credit', transaction_date: '2024-01-01' },
-      { amount: -850, description: 'Rent Payment', transaction_type: 'Debit', transaction_date: '2024-01-01' }
-    ],
-    userProfile: {
-      riskTolerance: 'moderate',
-      investmentExperience: 'beginner',
-      age: 28,
-      financialGoals: ['retirement', 'house down payment']
-    }
-  };
+// Ahmed's comprehensive financial data
+const ahmedFinancialData = require('./ahmed-financial-data.js');
+
+async function getAhmedFinancialData() {
+  return ahmedFinancialData;
 }
 
 app.post('/chat', async (req, res) => {
@@ -65,8 +48,8 @@ app.post('/chat', async (req, res) => {
       });
     }
 
-    // Get user's financial context (using mock data for now)
-    const financialData = await getMockFinancialData();
+    // Get Ahmed's financial context
+    const financialData = await getAhmedFinancialData();
     
     // Generate response with Gemini
     const geminiResponse = await geminiService.generateResponse(message, financialData);
