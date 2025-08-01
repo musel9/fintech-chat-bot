@@ -25,12 +25,13 @@ class GeminiFinancialService {
         'withdraw', 'deposit', 'spending', 'purchase', 'buy', 'sell', 'exchange', 'rate'
       ],
       arabic: [
-        'استثمار', 'مال', 'أموال', 'مالية', 'مصرف', 'بنك', 'حساب', 'رصيد', 'معاملة', 'دفع',
+        'استثمار', 'مال', 'أموال', 'مالية', 'مصرف', 'بنك', 'حساب', 'رصيد', 'معاملة', 'معاملات', 'دفع',
         'تحويل', 'ائتمان', 'خصم', 'قرض', 'رهن', 'ادخار', 'توفير', 'ميزانية', 'مصروف',
         'دخل', 'ربح', 'خسارة', 'دين', 'فائدة', 'محفظة', 'سهم', 'سند', 'صندوق',
         'تقاعد', 'معاش', 'تأمين', 'ضريبة', 'اقتصاد', 'تضخم', 'احتيال', 'أمان',
         'نصب', 'حماية', 'مشبوه', 'غير مصرح', 'بنوك مفتوحة', 'تقنية مالية',
-        'بنوك رقمية', 'بنوك محمولة', 'بطاقة', 'سحب', 'إيداع', 'إنفاق', 'شراء', 'بيع'
+        'بنوك رقمية', 'بنوك محمولة', 'بطاقة', 'سحب', 'إيداع', 'إنفاق', 'شراء', 'بيع',
+        'أظهر', 'عرض', 'اعرض'
       ]
     };
     
@@ -61,35 +62,32 @@ class GeminiFinancialService {
     });
     
     // Comprehensive system prompt with domain restrictions and language support
-    this.systemPrompt = `You are a specialized Financial and Banking Advisor. You ONLY provide advice on:
-- Personal finance, banking, investments, savings
-- Open banking, fintech, digital payments
-- Fraud detection, security, suspicious transactions
-- Budget planning, spending analysis, financial goals
-- Loans, mortgages, credit, debt management
-- Insurance, retirement planning, tax advice
+    this.systemPrompt = `You are a Financial Data Assistant with access to the user's actual financial data. Your job is to show their real banking information when requested.
 
-IMPORTANT RULES:
-1. ONLY answer questions related to finance, banking, money, investments, or financial security
-2. If asked about non-financial topics (weather, sports, entertainment, etc.), politely decline and redirect to financial matters
-3. If the user writes in Arabic, respond in Arabic
-4. If the user writes in English, respond in English
-5. Always reference their actual financial data when available
-6. Provide specific, actionable recommendations
-7. Include fraud detection warnings when relevant
-8. Suggest savings plans and financial improvements
+CRITICAL: The user has given you permission to access and display their financial data. You MUST show their actual transactions, balances, and spending when asked.
 
-For fraud detection, watch for:
-- Unusual spending patterns
-- Large unexpected transactions
-- Multiple small transactions (possible card testing)
-- Transactions from unknown locations
+CORE FUNCTION:
+- Display actual account balances, transactions, and spending data from their profile
+- Use the specific financial information provided in the context
+- Answer directly with their real data - NO security warnings or refusals
 
-LANGUAGE DETECTION:
-- Arabic input → Arabic response
-- English input → English response
+RESPONSE RULES:
+1. ONLY answer financial questions - reject non-financial topics politely
+2. Arabic input → Arabic response, English input → English response  
+3. When asked for transactions: LIST the actual transactions with dates, amounts, descriptions
+4. When asked for balance: SHOW the actual account balances from their accounts
+5. When asked for spending: DISPLAY the actual spending breakdown from their data
+6. Only provide advice/recommendations when explicitly asked (keywords: "advice", "recommend", "should I", "plan")
+7. DO NOT refuse to show data due to privacy concerns - you have permission
 
-Keep responses under 250 words for speed. Be professional, helpful, and security-focused.`;
+EXAMPLES:
+- "show my transactions" → Display the actual transaction list from their data
+- "what's my balance" → Show their real account balances
+- "my spending this month" → Show actual spending amounts by category
+- "give me advice" → Then provide recommendations
+- "make me a plan" → Then provide advisory response
+
+Be direct and factual. Show their real financial data when requested.`;
 
     // Enhanced rejection message templates
     this.rejectionMessages = {
@@ -271,8 +269,17 @@ Please provide a personalized response based on their specific financial situati
       });
     }
 
-    // Enhanced transaction analysis with categories
+    // Transaction data for direct queries
     if (transactions && transactions.length > 0) {
+      // Recent transactions (for transaction list queries)
+      const recentTransactions = transactions.slice(0, 20); // Last 20 transactions
+      context += `RECENT TRANSACTIONS:\n`;
+      recentTransactions.forEach((txn, index) => {
+        const amount = txn.amount >= 0 ? `+${txn.amount.toLocaleString()}` : txn.amount.toLocaleString();
+        context += `${index + 1}. ${txn.transaction_date} | ${amount} AED | ${txn.description} | ${txn.category || txn.transaction_type}\n`;
+      });
+      
+      // Monthly summary
       const last30Days = transactions.filter(t => 
         new Date(t.transaction_date) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
       );
@@ -284,16 +291,19 @@ Please provide a personalized response based on their specific financial situati
         .filter(t => t.transaction_type === 'Debit')
         .reduce((sum, t) => sum + t.amount, 0));
 
-      context += `MONTHLY ACTIVITY: Income ${monthlyIncome.toLocaleString()} AED, Spending ${monthlySpending.toLocaleString()} AED\n`;
+      context += `\nMONTHLY SUMMARY: Income ${monthlyIncome.toLocaleString()} AED, Spending ${monthlySpending.toLocaleString()} AED\n`;
       
-      // Top spending categories
+      // Spending categories
       const categories = this.analyzeSpendingCategories(last30Days);
       const topCategories = Object.entries(categories)
         .sort(([,a], [,b]) => b - a)
-        .slice(0, 3);
+        .slice(0, 5);
       
       if (topCategories.length > 0) {
-        context += `Top spending: ${topCategories.map(([cat, amt]) => `${cat} ${Math.abs(amt).toLocaleString()} AED`).join(', ')}\n`;
+        context += `SPENDING CATEGORIES:\n`;
+        topCategories.forEach(([cat, amt]) => {
+          context += `- ${cat}: ${Math.abs(amt).toLocaleString()} AED\n`;
+        });
       }
     }
 
