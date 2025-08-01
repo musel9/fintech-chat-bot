@@ -14,15 +14,18 @@ const finbot = new EnhancedFinancialAdvisor();
 
 // Initialize Gemini service (requires GEMINI_API_KEY environment variable)
 let geminiService = null;
+console.log('🔍 Checking GEMINI_API_KEY:', !!process.env.GEMINI_API_KEY);
 if (process.env.GEMINI_API_KEY) {
   try {
     geminiService = new GeminiFinancialService(process.env.GEMINI_API_KEY);
-    console.log('✅ Gemini API service initialized');
+    console.log('✅ Gemini API service initialized successfully');
+    console.log('🤖 Gemini will be used as primary model');
   } catch (error) {
-    console.warn('⚠️ Failed to initialize Gemini service:', error.message);
+    console.error('❌ Failed to initialize Gemini service:', error.message);
+    geminiService = null;
   }
 } else {
-  console.warn('⚠️ GEMINI_API_KEY not found. Using fallback financial advisor.');
+  console.warn('⚠️ GEMINI_API_KEY not found. Using fallback financial advisor only.');
 }
 
 app.post('/chat', async (req, res) => {
@@ -36,10 +39,15 @@ app.post('/chat', async (req, res) => {
     }
 
     let response;
+    let modelUsed = 'enhanced-financial-advisor';
+    
+    console.log('📨 Processing message:', message.substring(0, 50) + '...');
+    console.log('🤖 Gemini available:', !!geminiService);
     
     // Try Gemini API first, fallback to original advisor
     if (geminiService) {
       try {
+        console.log('🔄 Using Gemini API...');
         // Gather user's financial context
         const financialData = await gatherUserFinancialContext(userId);
         
@@ -47,25 +55,29 @@ app.post('/chat', async (req, res) => {
         const geminiResponse = await geminiService.generateResponse(message, financialData);
         
         if (geminiResponse.success) {
+          console.log('✅ Gemini response successful');
           response = geminiResponse.response;
+          modelUsed = 'gemini-1.5-flash';
         } else {
           // Fallback to original advisor
-          console.warn('Gemini API failed, using fallback advisor');
+          console.warn('⚠️ Gemini API failed, using fallback advisor');
           response = await finbot.processFinancialInput(message);
         }
       } catch (geminiError) {
-        console.error('Gemini service error:', geminiError);
+        console.error('❌ Gemini service error:', geminiError.message);
+        console.log('🔄 Falling back to original advisor...');
         response = await finbot.processFinancialInput(message);
       }
     } else {
       // Use original advisor
+      console.log('🔄 Using original financial advisor...');
       response = await finbot.processFinancialInput(message);
     }
     
     res.json({
       success: true,
       response: response,
-      model: geminiService ? 'gemini-1.5-flash' : 'enhanced-financial-advisor',
+      model: modelUsed,
       timestamp: new Date().toISOString()
     });
   } catch (error) {
