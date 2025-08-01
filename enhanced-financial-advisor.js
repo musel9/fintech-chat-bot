@@ -711,15 +711,65 @@ class EnhancedFinancialAdvisor {
   }
 
   isFinancialQuestion(input) {
-    const classification = this.financialValidator.classify(input.toLowerCase());
-    const confidence = Math.max(...this.financialValidator.getClassifications(input.toLowerCase()).map(c => c.value));
+    const lowerInput = input.toLowerCase();
     
-    // Additional financial keyword check
-    const hasFinancialTerms = Array.from(this.financialTerms).some(term => 
-      input.toLowerCase().includes(term)
+    // First check for explicit non-financial topics
+    const nonFinancialTopics = [
+      'weather', 'sports', 'politics', 'entertainment', 'travel', 'food', 'health',
+      'technology', 'science', 'history', 'literature', 'music', 'movies', 'games',
+      'relationships', 'education', 'career', 'hobbies', 'fashion', 'beauty',
+      'cooking', 'recipe', 'joke', 'story', 'news', 'celebrity', 'dating',
+      'medical', 'doctor', 'hospital', 'medicine', 'disease', 'symptoms',
+      'programming', 'code', 'software', 'hardware', 'computer', 'internet',
+      'social media', 'facebook', 'instagram', 'twitter', 'tiktok', 'youtube',
+      'art', 'painting', 'drawing', 'photography', 'craft', 'diy',
+      'animal', 'pet', 'dog', 'cat', 'bird', 'fish', 'nature', 'plant',
+      'car maintenance', 'repair', 'mechanic', 'engine', 'tire', 'oil change',
+      'birthday', 'anniversary', 'holiday', 'vacation', 'trip', 'hotel',
+      'restaurant', 'bar', 'club', 'party', 'event', 'concert', 'theater'
+    ];
+    
+    // Strict check for non-financial content
+    const containsNonFinancial = nonFinancialTopics.some(topic => 
+      lowerInput.includes(topic)
     );
     
-    return classification === 'financial' || hasFinancialTerms || confidence > 0.6;
+    if (containsNonFinancial) {
+      return false;
+    }
+    
+    // Enhanced financial keyword validation
+    const financialKeywords = Array.from(this.financialTerms);
+    const additionalFinancialKeywords = [
+      'money', 'dollar', 'cash', 'fund', 'account', 'bank', 'finance', 'financial',
+      'pay', 'payment', 'cost', 'price', 'spend', 'save', 'earn', 'income',
+      'salary', 'wage', 'profit', 'loss', 'debt', 'credit', 'loan', 'mortgage',
+      'interest', 'rate', 'percent', 'fee', 'charge', 'bill', 'expense',
+      'balance', 'transaction', 'deposit', 'withdrawal', 'transfer', 'worth',
+      'invest', 'investor', 'investing', 'retirement', 'retire', 'plan', 'planning',
+      'budget', 'budgeting', 'saving', 'savings', 'wealth', 'portfolio', 'financial',
+      'finances', 'finance', 'economic', 'economy', 'market', 'stock', 'stocks',
+      'bond', 'bonds', 'crypto', 'cryptocurrency', 'trading', 'trade', 'asset',
+      'assets', 'liability', 'liabilities', 'equity', 'capital', 'banking',
+      'refinance', 'refinancing', 'fraud', 'fraudulent', 'secure', 'security',
+      'suspicious', 'activity', 'alert', 'analysis', 'analyze'
+    ];
+    
+    const allFinancialKeywords = [...financialKeywords, ...additionalFinancialKeywords];
+    const hasFinancialTerms = allFinancialKeywords.some(term => 
+      lowerInput.includes(term)
+    );
+    
+    try {
+      const classification = this.financialValidator.classify(lowerInput);
+      const confidence = Math.max(...this.financialValidator.getClassifications(lowerInput).map(c => c.value));
+      
+      // Stricter validation - requires both classification AND financial keywords
+      return (classification === 'financial' && confidence > 0.7) || hasFinancialTerms;
+    } catch (error) {
+      // Fallback to keyword-based detection only
+      return hasFinancialTerms;
+    }
   }
 
   async processFinancialInput(input) {
@@ -845,15 +895,72 @@ class EnhancedFinancialAdvisor {
   }
 
   generateNonFinancialResponse(input) {
-    const responses = [
-      "🏦 I'm a specialized financial advisor AI. I can only help with financial questions, investment advice, budgeting, retirement planning, and money management topics.",
-      "💰 I focus exclusively on financial matters. Please ask me about investments, budgeting, savings, debt management, retirement planning, or other financial topics.",
-      "📊 I'm designed to provide expert financial guidance. Try asking about portfolio analysis, investment strategies, financial planning, or market insights.",
-      "🎯 My expertise is in financial advisory services. I can help with budgeting, investment recommendations, retirement planning, tax strategies, and wealth building."
-    ];
-    
-    return responses[Math.floor(Math.random() * responses.length)] + 
-           "\n\n💡 Try asking: 'How should I invest $10,000?' or 'Help me create a budget plan'";
+    return `🚫 I'm a specialized Financial Advisor AI and can only assist with financial topics.
+
+🏦 **MY EXPERTISE AREAS:**
+
+💰 **ACCOUNT & BALANCE MANAGEMENT:**
+• Check account balances and portfolio overview
+• Analyze net worth and financial status
+• Review account details and cash position
+
+📊 **SPENDING & TRANSACTION ANALYSIS:**
+• Analyze spending patterns and habits
+• Review transaction history and cash flow
+• Categorize expenses and income tracking
+
+💸 **BUDGET PLANNING & MANAGEMENT:**
+• Create personalized budget plans
+• Monthly budget analysis and optimization
+• Spending limits and budget recommendations
+
+📈 **INVESTMENT ADVICE & PORTFOLIO:**
+• Investment strategy and recommendations
+• Portfolio analysis and optimization
+• Stock market data and cryptocurrency insights
+• Asset allocation and diversification advice
+
+🎯 **SAVINGS GOALS & RETIREMENT:**
+• Set and track savings goals
+• Retirement planning and 401(k) optimization
+• Emergency fund planning
+• Financial goal achievement strategies
+
+💳 **DEBT & CREDIT MANAGEMENT:**
+• Debt payoff strategies (avalanche/snowball)
+• Credit score improvement advice
+• Loan and mortgage guidance
+• Debt consolidation recommendations
+
+🛡️ **SECURITY & FRAUD PROTECTION:**
+• Account security analysis
+• Fraud detection and prevention
+• Suspicious activity monitoring
+• Financial risk assessment
+
+💡 **FINANCIAL EDUCATION & ADVICE:**
+• Personal finance coaching and guidance
+• Explanation of financial concepts
+• Tax optimization strategies
+• Insurance planning and analysis
+
+📰 **MARKET NEWS & ANALYSIS:**
+• Real-time market updates and insights
+• Economic news and market trends
+• Investment opportunities analysis
+
+**💬 EXAMPLE QUESTIONS YOU CAN ASK:**
+• "What's my account balance?"
+• "Analyze my spending patterns"
+• "How should I invest $10,000?"
+• "Help me create a monthly budget"
+• "What's the best debt payoff strategy?"
+• "How much should I save for retirement?"
+• "Check for any fraudulent activity"
+• "Explain compound interest"
+• "What are current market trends?"
+
+Please ask me about any of these financial topics and I'll provide expert guidance!`;
   }
 
   async handlePortfolioAnalysis(input, confidence, entities) {
@@ -1447,6 +1554,247 @@ Diversification means spreading investments across different assets to reduce ri
 • Doesn't eliminate risk, but manages it
 
 ⚠️ **Important**: Diversification doesn't guarantee profits or prevent losses, but it's the closest thing to a "free lunch" in investing.
+
+`;
+  }
+
+  explainAssetAllocation() {
+    return `📊 **ASSET ALLOCATION EXPLAINED**:
+
+Asset allocation is how you divide your investments between different asset classes.
+
+🎯 **Main Asset Classes**:
+• Stocks (equity) - Growth potential, higher risk
+• Bonds (fixed income) - Stability, lower risk
+• Cash - Liquidity, lowest risk
+• Real Estate - Inflation hedge, diversification
+
+📈 **Age-Based Allocation Rule**:
+• Stocks: (120 - your age)%
+• Example: 30 years old = 90% stocks, 10% bonds
+• Example: 60 years old = 60% stocks, 40% bonds
+
+🔄 **Rebalancing**:
+• Review allocation quarterly
+• Rebalance when allocation drifts 5%+ from target
+• Sell high-performing assets, buy underperforming
+
+`;
+  }
+
+  explainDollarCostAveraging() {
+    return `💰 **DOLLAR COST AVERAGING EXPLAINED**:
+
+Dollar cost averaging means investing a fixed amount regularly, regardless of market conditions.
+
+📊 **How It Works**:
+• Invest same amount monthly (e.g., $500)
+• Buy more shares when prices are low
+• Buy fewer shares when prices are high
+• Averages out your cost over time
+
+✅ **Benefits**:
+• Reduces impact of market volatility
+• Removes emotion from investing decisions
+• Perfect timing becomes irrelevant
+• Builds discipline and consistency
+
+📈 **Example**:
+Month 1: $500 buys 10 shares at $50
+Month 2: $500 buys 12.5 shares at $40  
+Month 3: $500 buys 8.3 shares at $60
+Average cost: $48.39 per share
+
+`;
+  }
+
+  explainIndexFunds() {
+    return `📈 **INDEX FUNDS EXPLAINED**:
+
+Index funds are mutual funds that track a market index like the S&P 500.
+
+🎯 **Key Features**:
+• Passive management (no stock picking)
+• Low fees (typically 0.03% - 0.20%)
+• Instant diversification
+• Market returns, not trying to beat market
+
+✅ **Advantages**:
+• Low cost
+• Broad diversification
+• No manager risk
+• Tax efficient
+• Consistent performance
+
+💰 **Popular Index Funds**:
+• Total Stock Market (VTI, FZROX)
+• S&P 500 (VOO, FXAIX)  
+• International (VTIAX, FTIHX)
+• Bonds (BND, FXNAX)
+
+🏆 **Warren Buffett's Advice**: "A low-cost index fund is the most sensible equity investment for the great majority of investors."
+
+`;
+  }
+
+  explainETFs() {
+    return `📊 **ETFs (Exchange-Traded Funds) EXPLAINED**:
+
+ETFs are investment funds that trade on stock exchanges like individual stocks.
+
+🔄 **How They Work**:
+• Track an index, commodity, bonds, or basket of assets
+• Trade throughout market hours
+• Can be bought/sold like stocks
+• Most are passively managed
+
+✅ **Advantages**:
+• Lower expense ratios than mutual funds
+• Real-time trading
+• Tax efficiency
+• Transparency
+• No minimum investment
+
+⚠️ **Considerations**:
+• Trading fees (though many brokers now fee-free)
+• Bid-ask spreads
+• Premium/discount to NAV
+
+💰 **Popular ETFs**:
+• SPY, VOO (S&P 500)
+• VTI (Total Stock Market)
+• QQQ (Nasdaq 100)
+• VEA (International Developed)
+
+`;
+  }
+
+  explainBonds() {
+    return `🏛️ **BONDS EXPLAINED**:
+
+Bonds are loans you give to companies or governments in exchange for regular interest payments.
+
+💰 **How Bonds Work**:
+• You lend money for a fixed period
+• Receive regular interest payments (coupon)
+• Get principal back at maturity
+• Generally less risky than stocks
+
+📊 **Types of Bonds**:
+• Treasury bonds (US government)
+• Corporate bonds (companies)
+• Municipal bonds (local governments)
+• International bonds
+
+⚡ **Interest Rate Risk**:
+• Bond prices move opposite to interest rates
+• Rising rates = falling bond prices
+• Longer maturity = higher interest rate risk
+
+🎯 **Role in Portfolio**:
+• Stability and income
+• Diversification from stocks
+• Capital preservation
+• Inflation hedge (I-bonds, TIPS)
+
+`;
+  }
+
+  explainRiskTolerance() {
+    return `⚖️ **RISK TOLERANCE EXPLAINED**:
+
+Risk tolerance is your ability and willingness to handle investment losses.
+
+📊 **Three Components**:
+• Risk Capacity: Financial ability to take risk
+• Risk Willingness: Emotional comfort with risk  
+• Risk Need: Risk required to meet goals
+
+🎯 **Risk Levels**:
+• Conservative: 30% stocks, 70% bonds
+• Moderate: 60% stocks, 40% bonds
+• Aggressive: 80% stocks, 20% bonds
+
+💭 **Questions to Ask Yourself**:
+• How would you react to a 20% portfolio drop?
+• When do you need this money?
+• Do you have other income sources?
+• Can you sleep well during market downturns?
+
+⏰ **Time Horizon Matters**:
+• Longer time = can take more risk
+• Shorter time = need more stability
+• Young investors can be more aggressive
+
+`;
+  }
+
+  explainEmergencyFund() {
+    return `🚨 **EMERGENCY FUND EXPLAINED**:
+
+An emergency fund is money set aside for unexpected expenses or income loss.
+
+💰 **How Much to Save**:
+• Start with $1,000 (starter emergency fund)
+• Build to 3-6 months of expenses
+• Higher if self-employed or irregular income
+• Consider job stability and dependents
+
+🏦 **Where to Keep It**:
+• High-yield savings account
+• Money market account
+• Short-term CDs
+• NOT in stocks or risky investments
+
+✅ **What Qualifies as Emergency**:
+• Job loss
+• Major medical expenses
+• Car or home repairs
+• Family emergencies
+
+❌ **NOT Emergencies**:
+• Vacations
+• Holiday gifts
+• Non-essential purchases
+• Planned expenses
+
+🎯 **Building Strategy**:
+• Automate transfers
+• Save tax refunds and bonuses
+• Cut expenses temporarily
+• Sell unused items
+
+`;
+  }
+
+  explainTaxAdvantages() {
+    return `💸 **TAX-ADVANTAGED ACCOUNTS EXPLAINED**:
+
+These accounts offer tax benefits to encourage saving and investing.
+
+🏢 **401(k) - Employer Plan**:
+• Traditional: Tax deduction now, taxed in retirement
+• Roth: No deduction now, tax-free in retirement
+• Employer match = free money
+• 2024 limit: $23,000 ($30,500 if 50+)
+
+🏦 **IRA - Individual Account**:
+• Traditional IRA: Tax deduction now, taxed later
+• Roth IRA: No deduction now, tax-free later
+• 2024 limit: $7,000 ($8,000 if 50+)
+• Income limits for Roth IRA
+
+🏥 **HSA - Health Savings Account**:
+• Triple tax advantage
+• Deductible contributions
+• Tax-free growth and withdrawals for medical
+• Becomes retirement account at 65
+
+📊 **Tax Strategies**:
+• Asset location (bonds in tax-advantaged accounts)
+• Tax-loss harvesting
+• Roth conversions in low-income years
+• Maximize employer match first
 
 `;
   }
