@@ -191,7 +191,7 @@ Keep responses under 250 words for speed. Be professional, helpful, and security
   }
 
   async enrichUserContext(userMessage, financialData) {
-    const { balance, transactions, userProfile } = financialData;
+    const { balance, transactions, userProfile, savingsGoals, debts, alerts } = financialData;
     
     // Validate financial domain
     if (!this.isFinancialQuery(userMessage)) {
@@ -207,7 +207,7 @@ Keep responses under 250 words for speed. Be professional, helpful, and security
     const language = this.isArabic(userMessage) ? 'arabic' : 'english';
     
     // Create comprehensive financial context
-    const financialContext = this.buildFinancialContext(balance, transactions, userProfile);
+    const financialContext = this.buildFinancialContext(balance, transactions, userProfile, savingsGoals, debts, alerts);
     
     // Add fraud detection analysis
     const fraudAlerts = this.detectSuspiciousActivity(transactions);
@@ -244,51 +244,94 @@ Please provide a personalized response based on their specific financial situati
     };
   }
 
-  buildFinancialContext(accounts, transactions, userProfile) {
+  buildFinancialContext(accounts, transactions, userProfile, savingsGoals, debts, alerts) {
     let context = '';
     
-    // Concise account summary
+    // User overview
+    if (userProfile && userProfile.name) {
+      context += `USER: ${userProfile.name}, ${userProfile.age}y, ${userProfile.profession}\n`;
+      context += `LOCATION: ${userProfile.city}, Income: ${userProfile.monthlyIncome ? userProfile.monthlyIncome.toLocaleString() : 'N/A'} AED/month\n`;
+    }
+    
+    // Comprehensive account summary
     if (accounts && accounts.length > 0) {
-      const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
-      context += `FINANCES: Total $${totalBalance.toLocaleString()} across ${accounts.length} accounts\n`;
+      let totalBalanceAED = 0;
+      accounts.forEach(acc => {
+        const balanceInAED = acc.currency === 'AED' ? acc.balance : acc.balance * 3.67; // USD to AED conversion
+        totalBalanceAED += balanceInAED;
+      });
       
-      // Only show top 2 accounts for brevity
-      accounts.slice(0, 2).forEach(acc => {
-        context += `${acc.account_type}: $${acc.balance.toLocaleString()}\n`;
+      context += `ACCOUNTS: Total ${totalBalanceAED.toLocaleString()} AED across ${accounts.length} accounts\n`;
+      
+      accounts.forEach(acc => {
+        const balanceDisplay = acc.currency === 'AED' ? 
+          `${acc.balance.toLocaleString()} AED` : 
+          `${acc.balance.toLocaleString()} ${acc.currency} (~${(acc.balance * 3.67).toLocaleString()} AED)`;
+        context += `- ${acc.account_type} (${acc.bank}): ${balanceDisplay}\n`;
       });
     }
 
-    // Simplified transaction analysis
+    // Enhanced transaction analysis with categories
     if (transactions && transactions.length > 0) {
-      const totalSpent = transactions
-        .filter(t => t.transaction_type === 'Debit' || t.amount < 0)
-        .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-      const totalEarned = transactions
-        .filter(t => t.transaction_type === 'Credit' || t.amount > 0)
-        .reduce((sum, t) => sum + t.amount, 0);
-
-      context += `ACTIVITY: Income $${totalEarned.toLocaleString()}, Spending $${totalSpent.toLocaleString()}\n`;
+      const last30Days = transactions.filter(t => 
+        new Date(t.transaction_date) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+      );
       
-      // Only top 2 spending categories for speed
-      const categories = this.analyzeSpendingCategories(transactions);
+      const monthlyIncome = last30Days
+        .filter(t => t.transaction_type === 'Credit')
+        .reduce((sum, t) => sum + t.amount, 0);
+      const monthlySpending = Math.abs(last30Days
+        .filter(t => t.transaction_type === 'Debit')
+        .reduce((sum, t) => sum + t.amount, 0));
+
+      context += `MONTHLY ACTIVITY: Income ${monthlyIncome.toLocaleString()} AED, Spending ${monthlySpending.toLocaleString()} AED\n`;
+      
+      // Top spending categories
+      const categories = this.analyzeSpendingCategories(last30Days);
       const topCategories = Object.entries(categories)
         .sort(([,a], [,b]) => b - a)
-        .slice(0, 2);
+        .slice(0, 3);
       
       if (topCategories.length > 0) {
-        context += `Top expenses: ${topCategories.map(([cat, amt]) => `${cat} $${amt.toLocaleString()}`).join(', ')}\n`;
+        context += `Top spending: ${topCategories.map(([cat, amt]) => `${cat} ${Math.abs(amt).toLocaleString()} AED`).join(', ')}\n`;
       }
     }
 
-    // Essential user profile only
+    // Financial goals
+    if (savingsGoals && savingsGoals.length > 0) {
+      context += `GOALS: `;
+      const activeGoals = savingsGoals.slice(0, 2); // Top 2 goals
+      activeGoals.forEach(goal => {
+        const progress = ((goal.current_amount / goal.target_amount) * 100).toFixed(0);
+        context += `${goal.name} ${progress}% (${goal.current_amount.toLocaleString()}/${goal.target_amount.toLocaleString()} AED), `;
+      });
+      context = context.slice(0, -2) + '\n'; // Remove trailing comma
+    }
+
+    // Debts
+    if (debts && debts.length > 0) {
+      context += `DEBTS: `;
+      debts.forEach(debt => {
+        context += `${debt.type} ${debt.current_balance.toLocaleString()} AED remaining, `;
+      });
+      context = context.slice(0, -2) + '\n'; // Remove trailing comma
+    }
+
+    // User profile essentials
     if (userProfile) {
       const profile = [];
-      if (userProfile.age) profile.push(`Age ${userProfile.age}`);
-      if (userProfile.riskTolerance) profile.push(`${userProfile.riskTolerance} risk`);
+      if (userProfile.riskTolerance) profile.push(`${userProfile.riskTolerance} risk tolerance`);
       if (userProfile.investmentExperience) profile.push(`${userProfile.investmentExperience} investor`);
+      if (userProfile.maritalStatus) profile.push(userProfile.maritalStatus);
       if (profile.length > 0) {
         context += `PROFILE: ${profile.join(', ')}\n`;
       }
+    }
+
+    // Recent alerts
+    if (alerts && alerts.length > 0) {
+      const recentAlert = alerts[0];
+      context += `RECENT ALERT: ${recentAlert.message}\n`;
     }
 
     return context;

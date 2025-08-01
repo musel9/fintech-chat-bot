@@ -136,27 +136,44 @@ async function handleStreamingResponse(res, message, financialData, geminiServic
 // Helper function to gather user's financial context
 async function gatherUserFinancialContext(userId) {
   try {
-    // Get user's account balances
-    const accounts = await finbot.getAccountBalance();
+    // Use comprehensive mock user data
+    const mockUserData = require('./mock-user-data.js');
     
-    // Get recent transactions
-    const transactions = await finbot.getRecentTransactions(null, 100);
-    
-    // User profile from the financial advisor
-    const userProfile = finbot.userProfile;
+    console.log(`📊 Loading financial data for user: ${mockUserData.userProfile.name}`);
+    console.log(`💰 Total balance: ${mockUserData.balance.reduce((sum, acc) => sum + (acc.currency === 'AED' ? acc.balance : acc.balance * 3.67), 0).toLocaleString()} AED`);
+    console.log(`📈 Transactions loaded: ${mockUserData.transactions.length}`);
     
     return {
-      balance: accounts || [],
-      transactions: transactions || [],
-      userProfile: userProfile || {}
+      balance: mockUserData.balance,
+      transactions: mockUserData.transactions,
+      userProfile: mockUserData.userProfile,
+      savingsGoals: mockUserData.savingsGoals,
+      debts: mockUserData.debts,
+      insurance: mockUserData.insurance,
+      alerts: mockUserData.alerts
     };
   } catch (error) {
     console.error('Error gathering financial context:', error);
-    return {
-      balance: [],
-      transactions: [],
-      userProfile: {}
-    };
+    
+    // Fallback to database if mock data fails
+    try {
+      const accounts = await finbot.getAccountBalance();
+      const transactions = await finbot.getRecentTransactions(null, 100);
+      const userProfile = finbot.userProfile;
+      
+      return {
+        balance: accounts || [],
+        transactions: transactions || [],
+        userProfile: userProfile || {}
+      };
+    } catch (fallbackError) {
+      console.error('Fallback also failed:', fallbackError);
+      return {
+        balance: [],
+        transactions: [],
+        userProfile: {}
+      };
+    }
   }
 }
 
