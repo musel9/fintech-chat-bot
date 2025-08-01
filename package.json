@@ -6,17 +6,11 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "local": "node chatbot.js",
-    "smart": "node smart-chatbot.js",
-    "advanced": "node advanced-finbot.js",
-    "intelligent": "node intelligent-finbot.js",
-    "enhanced": "node enhanced-financial-advisor.js",
+    "chat": "node enhanced-financial-advisor.js",
     "advisor": "node enhanced-financial-advisor.js",
-    "demo": "node app-integration-example.js",
-    "demo-intelligent": "node demo-intelligent.js",
-    "test-commands": "node test-commands.js",
-    "test-clean": "node test-clean-commands.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "demo": "node demo-scope-limitation.js",
+    "test": "node test-single-system.js",
+    "test-scope": "node test-scope-limitation.js"
   },
   "keywords": ["chatbot", "fintech", "ai", "nlp"],
   "author": "",
