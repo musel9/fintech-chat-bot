@@ -2,10 +2,10 @@
   "name": "fintech-chatbot",
   "version": "1.0.0",
   "description": "Enhanced AI Financial Advisor with comprehensive investment guidance, budget planning, and personalized financial recommendations",
-  "main": "server.js",
+  "main": "gemini-server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js",
+    "start": "node gemini-server.js",
+    "dev": "node gemini-server.js",
     "chat": "node enhanced-financial-advisor.js",
     "advisor": "node enhanced-financial-advisor.js",
     "demo": "node demo-scope-limitation.js",
