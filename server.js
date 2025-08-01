@@ -1,6 +1,8 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const EnhancedFinancialAdvisor = require('./enhanced-financial-advisor.js');
+const GeminiFinancialService = require('./gemini-service.js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -10,9 +12,22 @@ app.use(express.json());
 
 const finbot = new EnhancedFinancialAdvisor();
 
+// Initialize Gemini service (requires GEMINI_API_KEY environment variable)
+let geminiService = null;
+if (process.env.GEMINI_API_KEY) {
+  try {
+    geminiService = new GeminiFinancialService(process.env.GEMINI_API_KEY);
+    console.log('✅ Gemini API service initialized');
+  } catch (error) {
+    console.warn('⚠️ Failed to initialize Gemini service:', error.message);
+  }
+} else {
+  console.warn('⚠️ GEMINI_API_KEY not found. Using fallback financial advisor.');
+}
+
 app.post('/chat', async (req, res) => {
   try {
-    const { message } = req.body;
+    const { message, userId } = req.body;
     
     if (!message || typeof message !== 'string') {
       return res.status(400).json({
@@ -20,11 +35,37 @@ app.post('/chat', async (req, res) => {
       });
     }
 
-    const response = await finbot.processFinancialInput(message);
+    let response;
+    
+    // Try Gemini API first, fallback to original advisor
+    if (geminiService) {
+      try {
+        // Gather user's financial context
+        const financialData = await gatherUserFinancialContext(userId);
+        
+        // Generate response with Gemini + user context
+        const geminiResponse = await geminiService.generateResponse(message, financialData);
+        
+        if (geminiResponse.success) {
+          response = geminiResponse.response;
+        } else {
+          // Fallback to original advisor
+          console.warn('Gemini API failed, using fallback advisor');
+          response = await finbot.processFinancialInput(message);
+        }
+      } catch (geminiError) {
+        console.error('Gemini service error:', geminiError);
+        response = await finbot.processFinancialInput(message);
+      }
+    } else {
+      // Use original advisor
+      response = await finbot.processFinancialInput(message);
+    }
     
     res.json({
       success: true,
       response: response,
+      model: geminiService ? 'gemini-1.5-flash' : 'enhanced-financial-advisor',
       timestamp: new Date().toISOString()
     });
   } catch (error) {
@@ -36,11 +77,55 @@ app.post('/chat', async (req, res) => {
   }
 });
 
-app.get('/health', (req, res) => {
-  res.json({
+// Helper function to gather user's financial context
+async function gatherUserFinancialContext(userId) {
+  try {
+    // Get user's account balances
+    const accounts = await finbot.getAccountBalance();
+    
+    // Get recent transactions
+    const transactions = await finbot.getRecentTransactions(null, 100);
+    
+    // User profile from the financial advisor
+    const userProfile = finbot.userProfile;
+    
+    return {
+      balance: accounts || [],
+      transactions: transactions || [],
+      userProfile: userProfile || {}
+    };
+  } catch (error) {
+    console.error('Error gathering financial context:', error);
+    return {
+      balance: [],
+      transactions: [],
+      userProfile: {}
+    };
+  }
+}
+
+app.get('/health', async (req, res) => {
+  const healthStatus = {
     status: 'healthy',
+    services: {
+      financialAdvisor: 'active',
+      geminiAPI: geminiService ? 'active' : 'disabled',
+      database: 'unknown'
+    },
     timestamp: new Date().toISOString()
-  });
+  };
+
+  // Test Gemini connection if available
+  if (geminiService) {
+    try {
+      const geminiTest = await geminiService.testConnection();
+      healthStatus.services.geminiAPI = geminiTest.success ? 'active' : 'error';
+    } catch (error) {
+      healthStatus.services.geminiAPI = 'error';
+    }
+  }
+
+  res.json(healthStatus);
 });
 
 app.get('/', (req, res) => {
