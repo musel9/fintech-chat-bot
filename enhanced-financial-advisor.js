@@ -328,23 +328,18 @@ class EnhancedFinancialAdvisor {
   }
 
   async initializeAdvancedSystem() {
-    console.log('🚀 Initializing World-Class Financial AI System...'.cyan);
-    
     try {
       await this.trainAdvancedNLP();
       await this.buildPredictiveModels();
       await this.initializeFinancialKnowledgeBase();
       await this.initializeAdvancedAnalytics();
       await this.buildFinancialModels();
-      
-      console.log('✅ World-Class Financial AI System Ready!'.green);
     } catch (error) {
-      console.error('❌ Initialization Error:'.red, error.message);
+      console.error('Initialization Error:', error.message);
     }
   }
   
   async initializeAdvancedAnalytics() {
-    console.log('📊 Initializing Advanced Analytics Engine...'.blue);
     
     // Initialize performance tracking
     this.analytics.performanceMetrics = {
@@ -368,11 +363,9 @@ class EnhancedFinancialAdvisor {
       updownCapture: { up: null, down: null }
     };
     
-    console.log('✅ Advanced Analytics Engine Initialized'.green);
   }
   
   async buildFinancialModels() {
-    console.log('🧮 Building Advanced Financial Models...'.magenta);
     
     // Black-Scholes Option Pricing Model
     this.models.blackScholes = {
@@ -430,11 +423,9 @@ class EnhancedFinancialAdvisor {
       }
     };
     
-    console.log('✅ Advanced Financial Models Built'.green);
   }
   
   startMarketDataUpdates() {
-    console.log('📡 Starting Real-time Market Data Updates...'.yellow);
     
     // Update market data every 5 minutes during market hours
     cron.schedule('*/5 9-16 * * 1-5', () => {
@@ -453,7 +444,6 @@ class EnhancedFinancialAdvisor {
   }
   
   initializePerformanceTracking() {
-    console.log('📈 Initializing Performance Tracking...'.cyan);
     
     // Initialize performance metrics
     this.userProfile.portfolioPerformance = [];
@@ -462,7 +452,6 @@ class EnhancedFinancialAdvisor {
   }
   
   setupContinuousLearning() {
-    console.log('🧠 Setting up Continuous Learning System...'.magenta);
     
     // Learn from user interactions
     this.learningSystem = {
@@ -474,7 +463,6 @@ class EnhancedFinancialAdvisor {
   }
 
   async trainAdvancedNLP() {
-    console.log('🧠 Training World-Class Financial NLP Models...'.yellow);
     
     // Train context classifier for better understanding
     await this.trainContextClassifier();
@@ -594,7 +582,6 @@ class EnhancedFinancialAdvisor {
     // Build financial knowledge graph
     await this.buildFinancialKnowledgeGraph();
     
-    console.log('✅ World-Class NLP Training Complete'.green);
   }
 
   async trainContextClassifier() {
@@ -660,18 +647,15 @@ class EnhancedFinancialAdvisor {
 
   async trainFinancialEntityExtraction() {
     // Simple entity extraction setup
-    console.log('💡 Setting up financial entity extraction...'.blue);
     return Promise.resolve();
   }
 
   async buildFinancialKnowledgeGraph() {
     // Simple knowledge graph setup
-    console.log('🧠 Building financial knowledge graph...'.cyan);
     return Promise.resolve();
   }
 
   async buildPredictiveModels() {
-    console.log('📊 Building Predictive Financial Models...'.blue);
     
     try {
       // Build spending prediction model
@@ -686,14 +670,12 @@ class EnhancedFinancialAdvisor {
       // Build budgeting model
       this.models.budgeting = this.buildBudgetingModel();
       
-      console.log('✅ Predictive Models Built Successfully'.green);
     } catch (error) {
       console.error('Model Building Error:', error);
     }
   }
 
   async initializeFinancialKnowledgeBase() {
-    console.log('📚 Loading Financial Knowledge Base...'.magenta);
     
     // Financial ratios and benchmarks
     this.benchmarks = {
@@ -707,7 +689,6 @@ class EnhancedFinancialAdvisor {
       cashAllocation: 0.10
     };
     
-    console.log('✅ Financial Knowledge Base Loaded'.green);
   }
 
   isFinancialQuestion(input) {
@@ -745,7 +726,8 @@ class EnhancedFinancialAdvisor {
       'pay', 'payment', 'cost', 'price', 'spend', 'save', 'earn', 'income',
       'salary', 'wage', 'profit', 'loss', 'debt', 'credit', 'loan', 'mortgage',
       'interest', 'rate', 'percent', 'fee', 'charge', 'bill', 'expense',
-      'balance', 'transaction', 'deposit', 'withdrawal', 'transfer', 'worth',
+      'balance', 'transaction', 'transactions', 'deposit', 'withdrawal', 'transfer', 'worth',
+      'history', 'statement', 'list', 'show', 'view',
       'invest', 'investor', 'investing', 'retirement', 'retire', 'plan', 'planning',
       'budget', 'budgeting', 'saving', 'savings', 'wealth', 'portfolio', 'financial',
       'finances', 'finance', 'economic', 'economy', 'market', 'stock', 'stocks',
@@ -772,6 +754,67 @@ class EnhancedFinancialAdvisor {
     }
   }
 
+  detectIntent(input) {
+    const lowerInput = input.toLowerCase();
+    
+    // Transaction/statement requests - check first for very specific intent
+    if (lowerInput.match(/transaction|transactions|statement|history|list.*transaction|show.*transaction|view.*transaction|my.*transaction/)) {
+      return 'transactions';
+    }
+    
+    // Account balance and account info requests - check second
+    if (lowerInput.match(/balance|my balance|account balance|how much.*have|what.*balance|check.*balance|account.*info|my account|accounts/)) {
+      return 'account';
+    }
+    
+    // Analysis/review requests - check second for more specific intent
+    if (lowerInput.match(/analysis|analyze|review|look at|check|show me|tell me about.*spending|spending.*analysis|spending.*last|spending.*month|spending.*week|spending.*year/)) {
+      return 'analysis';
+    }
+    
+    // Investment-related keywords
+    if (lowerInput.match(/invest|investment|stock|bond|etf|portfolio|mutual fund|index fund|401k|ira|crypto|trading|asset allocation/)) {
+      return 'investment';
+    }
+    
+    // Budget-related keywords (but not analysis requests)
+    if (lowerInput.match(/budget|budgeting|create.*budget|make.*budget|help.*budget/) && !lowerInput.match(/analysis|analyze|review|show me/)) {
+      return 'budget';
+    }
+    
+    // Debt-related keywords
+    if (lowerInput.match(/debt|loan|mortgage|credit card|pay off|owe|refinance|consolidate/)) {
+      return 'debt';
+    }
+    
+    // Retirement-related keywords
+    if (lowerInput.match(/retire|retirement|pension|401k|403b|social security|medicare/)) {
+      return 'retirement';
+    }
+    
+    // Savings-related keywords
+    if (lowerInput.match(/save|saving|savings|emergency fund|high yield|cd|certificate of deposit/)) {
+      return 'savings';
+    }
+    
+    // Credit-related keywords
+    if (lowerInput.match(/credit score|credit report|credit card|improve credit|build credit/)) {
+      return 'credit';
+    }
+    
+    // Insurance-related keywords
+    if (lowerInput.match(/insurance|life insurance|health insurance|disability|coverage/)) {
+      return 'insurance';
+    }
+    
+    // Tax-related keywords
+    if (lowerInput.match(/tax|taxes|deduction|refund|irs|filing|write off/)) {
+      return 'tax';
+    }
+    
+    return 'general';
+  }
+
   async processFinancialInput(input) {
     // Validate financial context
     if (!this.isFinancialQuestion(input)) {
@@ -779,17 +822,8 @@ class EnhancedFinancialAdvisor {
     }
 
     try {
-      // Advanced intent classification
-      let intent, confidence;
-      try {
-        intent = this.intentClassifier.classify(input.toLowerCase());
-        const classifications = this.intentClassifier.getClassifications(input.toLowerCase());
-        confidence = classifications.length > 0 ? Math.max(...classifications.map(c => c.value)) * 100 : 0;
-      } catch (classificationError) {
-        console.warn('Classification error, using fallback:', classificationError.message);
-        intent = 'general_financial_advice';
-        confidence = 50;
-      }
+      // Simple keyword-based intent detection
+      const intent = this.detectIntent(input);
       
       // Extract financial entities
       const entities = this.extractFinancialEntities(input);
@@ -799,7 +833,6 @@ class EnhancedFinancialAdvisor {
         timestamp: new Date(),
         input,
         intent,
-        confidence,
         entities
       });
 
@@ -811,54 +844,48 @@ class EnhancedFinancialAdvisor {
       let response = '';
       
       switch (intent) {
-        case 'portfolio_analysis':
-          response = await this.handlePortfolioAnalysis(input, confidence, entities);
+        case 'transactions':
+          response = this.handleTransactionQuery(input, entities);
           break;
-        case 'budget_planning':
-          response = await this.handleBudgetPlanning(input, confidence, entities);
+        case 'account':
+          response = this.handleAccountQuery(input, entities);
           break;
-        case 'debt_management':
-          response = await this.handleDebtManagement(input, confidence, entities);
+        case 'analysis':
+          response = this.handleAnalysisQuery(input, entities);
           break;
-        case 'investment_advice':
-          response = await this.handleInvestmentAdvice(input, confidence, entities);
+        case 'investment':
+          response = this.handleInvestmentQuery(input, entities);
           break;
-        case 'retirement_planning':
-          response = await this.handleRetirementPlanning(input, confidence, entities);
+        case 'budget':
+          response = this.handleBudgetQuery(input, entities);
           break;
-        case 'tax_optimization':
-          response = await this.handleTaxOptimization(input, confidence, entities);
+        case 'debt':
+          response = this.handleDebtQuery(input, entities);
           break;
-        case 'savings_goals':
-          response = await this.handleSavingsGoals(input, confidence, entities);
+        case 'retirement':
+          response = this.handleRetirementQuery(input, entities);
           break;
-        case 'insurance_planning':
-          response = await this.handleInsurancePlanning(input, confidence, entities);
+        case 'savings':
+          response = this.handleSavingsQuery(input, entities);
           break;
-        case 'market_analysis':
-          response = await this.handleMarketAnalysis(input, confidence, entities);
+        case 'credit':
+          response = this.handleCreditQuery(input, entities);
           break;
-        case 'financial_education':
-          response = await this.handleFinancialEducation(input, confidence, entities);
+        case 'insurance':
+          response = this.handleInsuranceQuery(input, entities);
           break;
-        case 'risk_assessment':
-          response = await this.handleRiskAssessment(input, confidence, entities);
-          break;
-        case 'credit_improvement':
-          response = await this.handleCreditImprovement(input, confidence, entities);
-          break;
-        case 'fraud_detection':
-          response = await this.handleFraudDetection(input, confidence, entities);
+        case 'tax':
+          response = this.handleTaxQuery(input, entities);
           break;
         default:
-          response = await this.handleGeneralFinancialQuery(input, confidence, entities);
+          response = this.handleGeneralQuery(input, entities);
       }
 
       return response;
 
     } catch (error) {
       console.error('Processing Error:', error);
-      return '🚨 I encountered an error while analyzing your financial question. Please rephrase and try again.';
+      return 'I encountered an error while processing your question. Please try again.';
     }
   }
 
@@ -2556,26 +2583,208 @@ These accounts offer tax benefits to encourage saving and investing.
     };
     return zScores[confidence] || 1.645;
   }
+
+  // Simple, relevant response handlers
+  handleTransactionQuery(input, entities) {
+    const lowerInput = input.toLowerCase();
+    
+    if (lowerInput.match(/list|show|view|display/) && lowerInput.match(/transaction|transactions/)) {
+      return "I don't have access to your personal transaction data.";
+    }
+    
+    if (lowerInput.match(/history|statement/)) {
+      return "I don't have access to your transaction history.";
+    }
+    
+    return "I can't access your personal transaction data.";
+  }
+
+  handleAccountQuery(input, entities) {
+    const lowerInput = input.toLowerCase();
+    
+    if (lowerInput.match(/balance|my balance|account balance|what.*balance|check.*balance/)) {
+      return "I don't have access to your actual account balances.";
+    }
+    
+    if (lowerInput.match(/how much.*have|how much.*money/)) {
+      return "I can't see your actual account balances.";
+    }
+    
+    if (lowerInput.match(/account.*info|my account|accounts/)) {
+      return "I don't have access to your personal account information.";
+    }
+    
+    return "I can't access your personal account information.";
+  }
+
+  handleAnalysisQuery(input, entities) {
+    const lowerInput = input.toLowerCase();
+    
+    if (lowerInput.match(/spending|spend|expense/)) {
+      return "I don't have access to your transaction data for spending analysis.";
+    }
+    
+    if (lowerInput.match(/portfolio|investment.*performance|returns/)) {
+      return "I don't have access to your investment account data.";
+    }
+    
+    if (lowerInput.match(/budget.*performance|budget.*review/)) {
+      return "I don't have access to your budget data.";
+    }
+    
+    return "I don't have access to your financial data for analysis.";
+  }
+
+  handleInvestmentQuery(input, entities) {
+    const lowerInput = input.toLowerCase();
+    
+    if (lowerInput.includes('how much') || lowerInput.includes('amount')) {
+      return "For investing, a common rule is to invest 10-20% of your income. Start with low-cost index funds or ETFs that track the S&P 500. Consider your risk tolerance and time horizon - the longer you can invest, the more risk you can generally take.";
+    }
+    
+    if (lowerInput.includes('beginner') || lowerInput.includes('start')) {
+      return "For beginners, I recommend starting with a diversified portfolio using low-cost index funds. Consider a target-date fund that automatically adjusts as you age, or a simple three-fund portfolio with total stock market, international stocks, and bonds.";
+    }
+    
+    if (lowerInput.includes('portfolio') || lowerInput.includes('diversify')) {
+      return "A well-diversified portfolio typically includes: 60-80% stocks (mix of domestic and international), 20-40% bonds, and possibly 5-10% alternatives. Adjust based on your age, risk tolerance, and goals. Rebalance annually.";
+    }
+    
+    return "I can help with investment strategies, portfolio allocation, fund selection, and risk management. Consider factors like your timeline, risk tolerance, and financial goals when making investment decisions.";
+  }
+
+  handleBudgetQuery(input, entities) {
+    const lowerInput = input.toLowerCase();
+    
+    if (lowerInput.includes('create') || lowerInput.includes('make') || lowerInput.includes('start')) {
+      return "To create a budget: 1) Track your income and expenses for a month, 2) Use the 50/30/20 rule: 50% needs, 30% wants, 20% savings/debt, 3) Use budgeting apps or spreadsheets, 4) Review and adjust monthly.";
+    }
+    
+    if (lowerInput.includes('save money') || lowerInput.includes('cut expenses')) {
+      return "To reduce expenses: Review subscriptions and cancel unused ones, cook at home more, compare insurance rates, negotiate bills, buy generic brands, and track spending to identify waste.";
+    }
+    
+    return "Good budgeting involves tracking income and expenses, prioritizing needs over wants, and allocating money for savings and debt repayment. The 50/30/20 rule is a good starting framework.";
+  }
+
+  handleDebtQuery(input, entities) {
+    const lowerInput = input.toLowerCase();
+    
+    if (lowerInput.includes('pay off') || lowerInput.includes('strategy')) {
+      return "Two main debt payoff strategies: 1) Avalanche method - pay minimums on all debts, extra on highest interest rate debt, 2) Snowball method - pay minimums on all, extra on smallest balance. Avalanche saves more money, snowball provides psychological wins.";
+    }
+    
+    if (lowerInput.includes('credit card')) {
+      return "For credit card debt: Stop using cards, pay more than minimum, consider balance transfer to 0% APR card, or personal loan at lower rate. Focus on highest interest cards first. Avoid closing old cards as it hurts credit score.";
+    }
+    
+    if (lowerInput.includes('consolidate')) {
+      return "Debt consolidation can simplify payments and potentially lower interest rates through personal loans, balance transfers, or HELOC. However, it doesn't reduce total debt - focus on changing spending habits too.";
+    }
+    
+    return "Focus on paying off high-interest debt first, make more than minimum payments, and avoid taking on new debt. Consider debt consolidation if it lowers your interest rates.";
+  }
+
+  handleRetirementQuery(input, entities) {
+    const lowerInput = input.toLowerCase();
+    
+    if (lowerInput.includes('how much') || lowerInput.includes('save')) {
+      return "General rule: Save 10-15% of income for retirement. Use employer 401(k) match first (free money!), then max out Roth IRA ($6,500/year, $7,500 if 50+), then back to 401(k). Start early - compound interest is powerful.";
+    }
+    
+    if (lowerInput.includes('401k') || lowerInput.includes('403b')) {
+      return "Contribute enough to get full employer match first. Choose low-cost index funds or target-date funds. Consider Roth vs traditional based on current vs expected future tax rates. Increase contributions with raises.";
+    }
+    
+    if (lowerInput.includes('ira') || lowerInput.includes('roth')) {
+      return "IRA contribution limit is $6,500/year ($7,500 if 50+). Roth IRA: pay taxes now, withdraw tax-free in retirement. Traditional IRA: deduct now, pay taxes in retirement. Choose based on current vs future tax bracket.";
+    }
+    
+    return "Start saving for retirement early and consistently. Take advantage of employer matches, maximize tax-advantaged accounts, and invest in diversified, low-cost funds.";
+  }
+
+  handleSavingsQuery(input, entities) {
+    const lowerInput = input.toLowerCase();
+    
+    if (lowerInput.includes('emergency') || lowerInput.includes('fund')) {
+      return "Emergency fund should cover 3-6 months of expenses. Keep it in a high-yield savings account or money market account for easy access. Start with $1,000, then build to full amount over time.";
+    }
+    
+    if (lowerInput.includes('high yield') || lowerInput.includes('best account')) {
+      return "Look for high-yield savings accounts offering 4-5% APY from online banks like Ally, Marcus, or Discover. Credit union accounts often have good rates too. Avoid accounts with monthly fees.";
+    }
+    
+    return "Build an emergency fund first (3-6 months expenses), then save for specific goals. Use high-yield savings accounts for short-term goals, consider CDs for money you won't need for 6+ months.";
+  }
+
+  handleCreditQuery(input, entities) {
+    const lowerInput = input.toLowerCase();
+    
+    if (lowerInput.includes('improve') || lowerInput.includes('build') || lowerInput.includes('increase')) {
+      return "To improve credit: Pay all bills on time, keep credit utilization below 30% (ideally under 10%), don't close old cards, monitor credit reports for errors, consider becoming authorized user on family member's card.";
+    }
+    
+    if (lowerInput.includes('score') || lowerInput.includes('report')) {
+      return "Check credit score free through Credit Karma, bank apps, or annualcreditreport.com. Scores range 300-850. Good credit is 670+, excellent is 740+. Payment history (35%) and credit utilization (30%) matter most.";
+    }
+    
+    return "Good credit comes from paying bills on time, keeping credit utilization low, and maintaining old accounts. Monitor your credit report regularly and dispute any errors.";
+  }
+
+  handleInsuranceQuery(input, entities) {
+    const lowerInput = input.toLowerCase();
+    
+    if (lowerInput.includes('life insurance')) {
+      return "Consider term life insurance if you have dependents. Rule of thumb: 10-12x annual income in coverage. Term is cheaper than whole life for most people. Get quotes from multiple insurers.";
+    }
+    
+    if (lowerInput.includes('health insurance')) {
+      return "Choose health insurance based on expected usage, preferred doctors, and budget. High-deductible plans with HSAs can be good for healthy people. Consider total costs (premiums + deductibles + copays).";
+    }
+    
+    return "Essential insurance includes health, auto (if you drive), renters/homeowners, and life insurance if you have dependents. Disability insurance protects your income if you can't work.";
+  }
+
+  handleTaxQuery(input, entities) {
+    const lowerInput = input.toLowerCase();
+    
+    if (lowerInput.includes('deduction') || lowerInput.includes('write off')) {
+      return "Common deductions: mortgage interest, state/local taxes (up to $10k), charitable donations, medical expenses over 7.5% of income. Consider itemizing vs standard deduction ($13,850 single, $27,700 married filing jointly for 2023).";
+    }
+    
+    if (lowerInput.includes('save') || lowerInput.includes('reduce')) {
+      return "Tax-saving strategies: contribute to 401(k)/IRA, use HSA if available, consider tax-loss harvesting, time capital gains/losses, bunch charitable deductions, and use tax-advantaged accounts.";
+    }
+    
+    return "Maximize tax-advantaged accounts like 401(k), IRA, and HSA. Keep good records of deductible expenses and consider whether itemizing beats the standard deduction.";
+  }
+
+  handleGeneralQuery(input, entities) {
+    const lowerInput = input.toLowerCase();
+    
+    if (lowerInput.includes('help') || lowerInput.includes('advice')) {
+      return "I can help with investments, budgeting, debt management, retirement planning, savings strategies, credit improvement, insurance, and tax planning. What specific financial topic interests you?";
+    }
+    
+    if (lowerInput.includes('start') || lowerInput.includes('begin')) {
+      return "Good financial foundation: 1) Create a budget, 2) Build emergency fund, 3) Pay off high-interest debt, 4) Start investing for retirement, 5) Get appropriate insurance coverage. Take it step by step!";
+    }
+    
+    return "I'm here to help with your financial questions. I can provide guidance on investing, budgeting, debt management, retirement planning, and more. What would you like to know about?";
+  }
 }
 
 // Enhanced CLI Interface
 async function startEnhancedFinancialAdvisor() {
-  console.log('🏦 Enhanced Financial Advisor AI Started!'.rainbow);
-  console.log('💡 Specialized AI for comprehensive financial advice, investment guidance, and personalized recommendations'.cyan);
-  console.log('🎯 I only answer financial questions and provide expert money management advice'.green);
-  console.log('');
+  console.log('Financial Advisor Started');
   
   const advisor = new EnhancedFinancialAdvisor();
   
   try {
     await advisor.initializeUser();
-    await advisor.initializeAdvancedAI();
-    console.log('✅ Financial AI system initialized and ready for consultation!'.green);
-    console.log('💰 Ask me about investments, budgeting, retirement, debt management, and more...'.yellow);
-    console.log('');
+    await advisor.initializeAdvancedSystem();
   } catch (error) {
-    console.error('❌ Error initializing financial advisor:'.red, error.message);
-    console.log('💡 Continuing with general financial advisory capabilities...'.yellow);
+    console.error('Error initializing financial advisor:', error.message);
   }
   
   const rl = readline.createInterface({
@@ -2586,8 +2795,7 @@ async function startEnhancedFinancialAdvisor() {
   function askQuestion() {
     rl.question('You: '.bold.blue, async (input) => {
       if (input.toLowerCase().trim() === 'exit') {
-        console.log('👋 Thank you for using Enhanced Financial Advisor AI!'.rainbow);
-        console.log('💡 Remember: Start investing early, diversify your portfolio, and stay disciplined!'.cyan);
+        console.log('Goodbye!');
         if (advisor.db) advisor.db.close();
         rl.close();
         return;
@@ -2595,18 +2803,15 @@ async function startEnhancedFinancialAdvisor() {
       
       if (input.trim()) {
         try {
-          console.log('🧠 Analyzing your financial question with advanced AI...'.yellow);
           const startTime = Date.now();
           
           const response = await advisor.processFinancialInput(input);
           
           const processingTime = Date.now() - startTime;
           console.log(`\n${response}`);
-          console.log(`\n⚡ Analysis completed in ${processingTime}ms`.gray);
           console.log('');
         } catch (error) {
-          console.error('❌ Error processing financial question:'.red, error.message);
-          console.log('💡 Please try again with a different question.'.cyan);
+          console.error('Error processing question:', error.message);
         }
       }
       
