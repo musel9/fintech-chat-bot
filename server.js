@@ -1,4 +1,7 @@
-require('dotenv').config();
+// Load environment variables (Railway automatically provides them)
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
 const express = require('express');
 const cors = require('cors');
 const EnhancedFinancialAdvisor = require('./enhanced-financial-advisor.js');
@@ -30,7 +33,7 @@ if (process.env.GEMINI_API_KEY) {
 
 app.post('/chat', async (req, res) => {
   try {
-    const { message, userId } = req.body;
+    const { message, userId, stream } = req.body;
     
     if (!message || typeof message !== 'string') {
       return res.status(400).json({
@@ -43,6 +46,7 @@ app.post('/chat', async (req, res) => {
     
     console.log('📨 Processing message:', message.substring(0, 50) + '...');
     console.log('🤖 Gemini available:', !!geminiService);
+    console.log('🌊 Streaming requested:', !!stream);
     
     // Try Gemini API first, fallback to original advisor
     if (geminiService) {
@@ -50,6 +54,11 @@ app.post('/chat', async (req, res) => {
         console.log('🔄 Using Gemini API...');
         // Gather user's financial context
         const financialData = await gatherUserFinancialContext(userId);
+        
+        // Use streaming if requested
+        if (stream && res.writeHead) {
+          return handleStreamingResponse(res, message, financialData, geminiService);
+        }
         
         // Generate response with Gemini + user context
         const geminiResponse = await geminiService.generateResponse(message, financialData);
@@ -88,6 +97,41 @@ app.post('/chat', async (req, res) => {
     });
   }
 });
+
+// Streaming response handler
+async function handleStreamingResponse(res, message, financialData, geminiService) {
+  try {
+    console.log('🌊 Starting streaming response...');
+    
+    // Set headers for streaming
+    res.writeHead(200, {
+      'Content-Type': 'text/plain',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+    });
+
+    const streamingResponse = await geminiService.generateStreamingResponse(message, financialData);
+    
+    if (streamingResponse.success && streamingResponse.stream) {
+      for await (const chunk of streamingResponse.stream) {
+        const chunkText = chunk.text();
+        if (chunkText) {
+          res.write(chunkText);
+        }
+      }
+      res.end();
+      console.log('✅ Streaming response completed');
+    } else {
+      res.write('Error: Unable to stream response');
+      res.end();
+    }
+  } catch (error) {
+    console.error('❌ Streaming error:', error);
+    res.write('Error: Streaming failed');
+    res.end();
+  }
+}
 
 // Helper function to gather user's financial context
 async function gatherUserFinancialContext(userId) {
