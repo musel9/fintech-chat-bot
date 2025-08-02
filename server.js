@@ -1,7 +1,4 @@
-// Load environment variables (Railway automatically provides them)
-if (process.env.NODE_ENV !== 'production') {
-  require('dotenv').config();
-}
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const EnhancedFinancialAdvisor = require('./enhanced-financial-advisor.js');
@@ -33,7 +30,7 @@ if (process.env.GEMINI_API_KEY) {
 
 app.post('/chat', async (req, res) => {
   try {
-    const { message, userId, stream } = req.body;
+    const { message, userId } = req.body;
     
     if (!message || typeof message !== 'string') {
       return res.status(400).json({
@@ -46,7 +43,6 @@ app.post('/chat', async (req, res) => {
     
     console.log('📨 Processing message:', message.substring(0, 50) + '...');
     console.log('🤖 Gemini available:', !!geminiService);
-    console.log('🌊 Streaming requested:', !!stream);
     
     // Try Gemini API first, fallback to original advisor
     if (geminiService) {
@@ -54,11 +50,6 @@ app.post('/chat', async (req, res) => {
         console.log('🔄 Using Gemini API...');
         // Gather user's financial context
         const financialData = await gatherUserFinancialContext(userId);
-        
-        // Use streaming if requested
-        if (stream && res.writeHead) {
-          return handleStreamingResponse(res, message, financialData, geminiService);
-        }
         
         // Generate response with Gemini + user context
         const geminiResponse = await geminiService.generateResponse(message, financialData);
@@ -98,82 +89,30 @@ app.post('/chat', async (req, res) => {
   }
 });
 
-// Streaming response handler
-async function handleStreamingResponse(res, message, financialData, geminiService) {
-  try {
-    console.log('🌊 Starting streaming response...');
-    
-    // Set headers for streaming
-    res.writeHead(200, {
-      'Content-Type': 'text/plain',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-      'Access-Control-Allow-Origin': '*',
-    });
-
-    const streamingResponse = await geminiService.generateStreamingResponse(message, financialData);
-    
-    if (streamingResponse.success && streamingResponse.stream) {
-      for await (const chunk of streamingResponse.stream) {
-        const chunkText = chunk.text();
-        if (chunkText) {
-          res.write(chunkText);
-        }
-      }
-      res.end();
-      console.log('✅ Streaming response completed');
-    } else {
-      res.write('Error: Unable to stream response');
-      res.end();
-    }
-  } catch (error) {
-    console.error('❌ Streaming error:', error);
-    res.write('Error: Streaming failed');
-    res.end();
-  }
-}
-
 // Helper function to gather user's financial context
 async function gatherUserFinancialContext(userId) {
   try {
-    // Use comprehensive mock user data
-    const mockUserData = require('./mock-user-data.js');
+    // Get user's account balances
+    const accounts = await finbot.getAccountBalance();
     
-    console.log(`📊 Loading financial data for user: ${mockUserData.userProfile.name}`);
-    console.log(`💰 Total balance: ${mockUserData.balance.reduce((sum, acc) => sum + (acc.currency === 'AED' ? acc.balance : acc.balance * 3.67), 0).toLocaleString()} AED`);
-    console.log(`📈 Transactions loaded: ${mockUserData.transactions.length}`);
+    // Get recent transactions
+    const transactions = await finbot.getRecentTransactions(null, 100);
+    
+    // User profile from the financial advisor
+    const userProfile = finbot.userProfile;
     
     return {
-      balance: mockUserData.balance,
-      transactions: mockUserData.transactions,
-      userProfile: mockUserData.userProfile,
-      savingsGoals: mockUserData.savingsGoals,
-      debts: mockUserData.debts,
-      insurance: mockUserData.insurance,
-      alerts: mockUserData.alerts
+      balance: accounts || [],
+      transactions: transactions || [],
+      userProfile: userProfile || {}
     };
   } catch (error) {
     console.error('Error gathering financial context:', error);
-    
-    // Fallback to database if mock data fails
-    try {
-      const accounts = await finbot.getAccountBalance();
-      const transactions = await finbot.getRecentTransactions(null, 100);
-      const userProfile = finbot.userProfile;
-      
-      return {
-        balance: accounts || [],
-        transactions: transactions || [],
-        userProfile: userProfile || {}
-      };
-    } catch (fallbackError) {
-      console.error('Fallback also failed:', fallbackError);
-      return {
-        balance: [],
-        transactions: [],
-        userProfile: {}
-      };
-    }
+    return {
+      balance: [],
+      transactions: [],
+      userProfile: {}
+    };
   }
 }
 

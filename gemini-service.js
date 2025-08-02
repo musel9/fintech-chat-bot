@@ -1,5 +1,6 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
+// GeminiFinancialService Class
 class GeminiFinancialService {
   constructor(apiKey) {
     if (!apiKey) {
@@ -54,11 +55,11 @@ class GeminiFinancialService {
     this.model = this.genAI.getGenerativeModel({ 
       model: "gemini-1.5-flash",
       generationConfig: {
-        temperature: 0.7,           // Slightly lower for faster, more focused responses
-        topK: 20,                   // Reduced from default for speed
-        topP: 0.8,                  // Reduced from default for speed
-        maxOutputTokens: 200,       // Very short responses only
-        candidateCount: 1           // Only generate one response
+        temperature: 0.7,
+        topK: 20,
+        topP: 0.8,
+        maxOutputTokens: 200,
+        candidateCount: 1
       }
     });
     
@@ -80,7 +81,6 @@ class GeminiFinancialService {
     const lowerMessage = message.toLowerCase().trim();
     const isArabicText = this.isArabic(message);
     
-    // Check for financial keywords
     const financialKeywords = isArabicText ? 
       this.financialKeywords.arabic : 
       this.financialKeywords.english;
@@ -89,15 +89,13 @@ class GeminiFinancialService {
       lowerMessage.includes(keyword.toLowerCase())
     );
     
-    // NEW RULE: Single word financial queries are always valid
     const words = lowerMessage.split(/\s+/).filter(word => word.length > 0);
     const isSingleWord = words.length === 1;
     
     if (isSingleWord && hasFinancialKeywords) {
-      return true; // Allow single financial words like "balance", "transactions", "savings"
+      return true;
     }
     
-    // Check for rejected topics
     const rejectedKeywords = isArabicText ? 
       this.rejectedTopics.arabic : 
       this.rejectedTopics.english;
@@ -106,7 +104,6 @@ class GeminiFinancialService {
       lowerMessage.includes(keyword.toLowerCase())
     );
     
-    // Additional context-based validation for multi-word queries
     const financialPhrases = isArabicText ? [
       'كيف يمكنني', 'ماذا عن', 'هل يجب', 'أريد أن', 'كم يجب'
     ] : [
@@ -134,7 +131,7 @@ class GeminiFinancialService {
     // Detect language for response
     const language = this.isArabic(userMessage) ? 'arabic' : 'english';
     
-    // Create the simplified prompt with only the required content
+    // Create the simplified prompt with exactly your specified content
     const simplifiedPrompt = `The user called Ahmed has 4 accounts and 153000 SAR in all of them and highly spending on the home staff such as Ikea, Home Box and such a things all of your responses make it on a dummy data and don't show that i provided a data for you or such a thing, and reply with the same lang the question comes with here is the user request: ${userMessage}`;
 
     return {
@@ -144,7 +141,7 @@ class GeminiFinancialService {
     };
   }
 
-  // Generate cache key from message only (simplified)
+  // Generate cache key from message only
   generateCacheKey(userMessage) {
     return userMessage.toLowerCase().trim().substring(0, 50);
   }
@@ -165,7 +162,6 @@ class GeminiFinancialService {
       timestamp: Date.now()
     });
     
-    // Clean old cache entries periodically
     if (this.responseCache.size > 100) {
       const oldestKeys = Array.from(this.responseCache.keys()).slice(0, 20);
       oldestKeys.forEach(key => this.responseCache.delete(key));
@@ -174,7 +170,6 @@ class GeminiFinancialService {
 
   async generateResponse(userMessage, financialData) {
     try {
-      // Check cache first for common queries
       const cacheKey = this.generateCacheKey(userMessage);
       const cachedResponse = this.getCachedResponse(cacheKey);
       
@@ -191,7 +186,6 @@ class GeminiFinancialService {
       
       const enrichmentResult = await this.enrichUserContext(userMessage, financialData);
       
-      // Handle rejected non-financial queries
       if (enrichmentResult.isRejected) {
         console.log('🚫 Non-financial query rejected');
         return {
@@ -208,7 +202,6 @@ class GeminiFinancialService {
       const response = result.response;
       const text = response.text();
       
-      // Cache the response
       this.setCachedResponse(cacheKey, text);
       
       return {
@@ -229,38 +222,6 @@ class GeminiFinancialService {
     }
   }
 
-  // Streaming response method for real-time output
-  async generateStreamingResponse(userMessage, financialData) {
-    try {
-      const enrichmentResult = await this.enrichUserContext(userMessage, financialData);
-      
-      if (enrichmentResult.isRejected) {
-        return {
-          success: false,
-          error: 'Non-financial query rejected',
-          rejectionMessage: enrichmentResult.rejectionMessage
-        };
-      }
-      
-      const result = await this.model.generateContentStream(enrichmentResult.enrichedPrompt);
-      
-      return {
-        success: true,
-        stream: result.stream,
-        model: 'gemini-1.5-flash',
-        timestamp: new Date().toISOString()
-      };
-    } catch (error) {
-      console.error('Gemini Streaming API Error:', error);
-      return {
-        success: false,
-        error: 'Failed to generate streaming response from Gemini API',
-        fallback: true
-      };
-    }
-  }
-
-  // Health check method
   async testConnection() {
     try {
       const result = await this.model.generateContent("Say 'Hello' if you can receive this message.");
