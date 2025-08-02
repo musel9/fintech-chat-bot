@@ -62,34 +62,6 @@ class GeminiFinancialService {
       }
     });
     
-    // Concise system prompt for direct responses only
-    this.systemPrompt = `You are Ahmed's personal Financial Assistant. Answer only what is asked - nothing more.
-
-AHMED'S PROFILE:
-- Name: Ahmed
-- Total Balance: 153,000 SAR across 4 accounts
-- Account 1 (Checking): 45,000 SAR
-- Account 2 (Savings): 85,000 SAR  
-- Account 3 (Investment): 18,000 SAR
-- Account 4 (Emergency): 5,000 SAR
-- High spending pattern on home goods: IKEA, Home Box, Home Centre, etc.
-- Recent transactions include furniture, home decor, kitchen items, and household supplies
-
-CRITICAL RULES:
-1. Answer ONLY the specific question asked
-2. NO additional explanations, tips, or advice unless explicitly requested
-3. Arabic input → Arabic response, English input → English response
-4. Always respond as if this is Ahmed's real financial data
-5. Never mention that this is dummy data or that data was provided
-
-RESPONSE FORMAT:
-- Balance question → Show Ahmed's account balances
-- Transaction question → List Ahmed's home goods purchases (IKEA, Home Box, etc.)
-- Spending question → Show Ahmed's spending on home items
-- Advice question (keywords: "advice", "recommend", "should I", "plan") → Then provide recommendations
-
-Be direct. Answer only what is asked about Ahmed's finances.`;
-
     // Enhanced rejection message templates
     this.rejectionMessages = {
       english: "I'm a specialized financial advisor. I can only help with banking, investments, savings, budgeting, fraud detection, and other financial matters. Please ask me about your finances, investments, or banking needs.",
@@ -148,58 +120,7 @@ Be direct. Answer only what is asked about Ahmed's finances.`;
     return (hasFinancialKeywords || hasFinancialContext) && !hasRejectedKeywords;
   }
 
-  // Enhanced fraud detection analysis
-  detectSuspiciousActivity(transactions) {
-    if (!transactions || transactions.length === 0) return [];
-    
-    const alerts = [];
-    const amounts = transactions.map(t => Math.abs(t.amount));
-    const avgAmount = amounts.reduce((sum, amt) => sum + amt, 0) / amounts.length;
-    
-    // Check for unusual patterns
-    transactions.forEach(transaction => {
-      const amount = Math.abs(transaction.amount);
-      
-      // Large transaction (5x average)
-      if (amount > avgAmount * 5 && amount > 1000) {
-        alerts.push({
-          type: 'large_transaction',
-          amount: amount,
-          description: transaction.description,
-          risk: 'medium'
-        });
-      }
-      
-      // Multiple small transactions (possible card testing)
-      const smallTransactions = transactions.filter(t => 
-        Math.abs(t.amount) < 10 && t.transaction_type === 'Debit'
-      );
-      if (smallTransactions.length > 5) {
-        alerts.push({
-          type: 'multiple_small_transactions',
-          count: smallTransactions.length,
-          risk: 'high'
-        });
-      }
-      
-      // Suspicious keywords in description
-      const suspiciousKeywords = ['unknown', 'temp', 'pending', 'reversal', 'dispute'];
-      if (transaction.description && suspiciousKeywords.some(keyword => 
-        transaction.description.toLowerCase().includes(keyword))) {
-        alerts.push({
-          type: 'suspicious_description',
-          description: transaction.description,
-          risk: 'low'
-        });
-      }
-    });
-    
-    return alerts.slice(0, 3); // Limit to top 3 alerts
-  }
-
   async enrichUserContext(userMessage, financialData) {
-    const { balance, transactions, userProfile, savingsGoals, debts, alerts } = financialData;
-    
     // Validate financial domain
     if (!this.isFinancialQuery(userMessage)) {
       const language = this.isArabic(userMessage) ? 'arabic' : 'english';
@@ -213,192 +134,19 @@ Be direct. Answer only what is asked about Ahmed's finances.`;
     // Detect language for response
     const language = this.isArabic(userMessage) ? 'arabic' : 'english';
     
-    // Create comprehensive financial context
-    const financialContext = this.buildFinancialContext(balance, transactions, userProfile, savingsGoals, debts, alerts);
-    
-    // Add fraud detection analysis
-    const fraudAlerts = this.detectSuspiciousActivity(transactions);
-    let fraudSection = '';
-    if (fraudAlerts.length > 0) {
-      fraudSection = language === 'arabic' ? 
-        `\nتنبيهات الأمان: ${fraudAlerts.length} نشاط مشبوه تم اكتشافه\n` :
-        `\nSECURITY ALERTS: ${fraudAlerts.length} suspicious activities detected\n`;
-    }
-    
-    // Construct enriched prompt with language directive
-    const languageDirective = language === 'arabic' ? 
-      'يجب الرد باللغة العربية' : 
-      'Respond in English';
-    
-    const enrichedPrompt = `
-${this.systemPrompt}
-
-LANGUAGE: ${languageDirective}
-
-CURRENT USER FINANCIAL PROFILE:
-${financialContext}${fraudSection}
-
-USER'S QUESTION/REQUEST:
-${userMessage}
-
-Please provide a personalized response based on their specific financial situation in ${language === 'arabic' ? 'Arabic' : 'English'}.`;
+    // Create the simplified prompt with only the required content
+    const simplifiedPrompt = `The user called Ahmed has 4 accounts and 153000 SAR in all of them and highly spending on the home staff such as Ikea, Home Box and such a things all of your responses make it on a dummy data and don't show that i provided a data for you or such a thing, and reply with the same lang the question comes with here is the user request: ${userMessage}`;
 
     return {
       isRejected: false,
-      enrichedPrompt: enrichedPrompt,
-      language: language,
-      fraudAlerts: fraudAlerts
+      enrichedPrompt: simplifiedPrompt,
+      language: language
     };
   }
 
-  buildFinancialContext(accounts, transactions, userProfile, savingsGoals, debts, alerts) {
-    let context = '';
-    
-    // User overview
-    if (userProfile && userProfile.name) {
-      context += `USER: ${userProfile.name}, ${userProfile.age}y, ${userProfile.profession}\n`;
-      context += `LOCATION: ${userProfile.city}, Income: ${userProfile.monthlyIncome ? userProfile.monthlyIncome.toLocaleString() : 'N/A'} AED/month\n`;
-    }
-    
-    // Comprehensive account summary
-    if (accounts && accounts.length > 0) {
-      let totalBalanceAED = 0;
-      accounts.forEach(acc => {
-        const balanceInAED = acc.currency === 'AED' ? acc.balance : acc.balance * 3.67; // USD to AED conversion
-        totalBalanceAED += balanceInAED;
-      });
-      
-      context += `ACCOUNTS: Total ${totalBalanceAED.toLocaleString()} AED across ${accounts.length} accounts\n`;
-      
-      accounts.forEach(acc => {
-        const balanceDisplay = acc.currency === 'AED' ? 
-          `${acc.balance.toLocaleString()} AED` : 
-          `${acc.balance.toLocaleString()} ${acc.currency} (~${(acc.balance * 3.67).toLocaleString()} AED)`;
-        context += `- ${acc.account_type} (${acc.bank}): ${balanceDisplay}\n`;
-      });
-    }
-
-    // Transaction data for direct queries
-    if (transactions && transactions.length > 0) {
-      // Recent transactions (for transaction list queries)
-      const recentTransactions = transactions.slice(0, 20); // Last 20 transactions
-      context += `RECENT TRANSACTIONS:\n`;
-      recentTransactions.forEach((txn, index) => {
-        const amount = txn.amount >= 0 ? `+${txn.amount.toLocaleString()}` : txn.amount.toLocaleString();
-        context += `${index + 1}. ${txn.transaction_date} | ${amount} AED | ${txn.description} | ${txn.category || txn.transaction_type}\n`;
-      });
-      
-      // Monthly summary
-      const last30Days = transactions.filter(t => 
-        new Date(t.transaction_date) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-      );
-      
-      const monthlyIncome = last30Days
-        .filter(t => t.transaction_type === 'Credit')
-        .reduce((sum, t) => sum + t.amount, 0);
-      const monthlySpending = Math.abs(last30Days
-        .filter(t => t.transaction_type === 'Debit')
-        .reduce((sum, t) => sum + t.amount, 0));
-
-      context += `\nMONTHLY SUMMARY: Income ${monthlyIncome.toLocaleString()} AED, Spending ${monthlySpending.toLocaleString()} AED\n`;
-      
-      // Spending categories
-      const categories = this.analyzeSpendingCategories(last30Days);
-      const topCategories = Object.entries(categories)
-        .sort(([,a], [,b]) => b - a)
-        .slice(0, 5);
-      
-      if (topCategories.length > 0) {
-        context += `SPENDING CATEGORIES:\n`;
-        topCategories.forEach(([cat, amt]) => {
-          context += `- ${cat}: ${Math.abs(amt).toLocaleString()} AED\n`;
-        });
-      }
-    }
-
-    // Financial goals
-    if (savingsGoals && savingsGoals.length > 0) {
-      context += `GOALS: `;
-      const activeGoals = savingsGoals.slice(0, 2); // Top 2 goals
-      activeGoals.forEach(goal => {
-        const progress = ((goal.current_amount / goal.target_amount) * 100).toFixed(0);
-        context += `${goal.name} ${progress}% (${goal.current_amount.toLocaleString()}/${goal.target_amount.toLocaleString()} AED), `;
-      });
-      context = context.slice(0, -2) + '\n'; // Remove trailing comma
-    }
-
-    // Debts
-    if (debts && debts.length > 0) {
-      context += `DEBTS: `;
-      debts.forEach(debt => {
-        context += `${debt.type} ${debt.current_balance.toLocaleString()} AED remaining, `;
-      });
-      context = context.slice(0, -2) + '\n'; // Remove trailing comma
-    }
-
-    // User profile essentials
-    if (userProfile) {
-      const profile = [];
-      if (userProfile.riskTolerance) profile.push(`${userProfile.riskTolerance} risk tolerance`);
-      if (userProfile.investmentExperience) profile.push(`${userProfile.investmentExperience} investor`);
-      if (userProfile.maritalStatus) profile.push(userProfile.maritalStatus);
-      if (profile.length > 0) {
-        context += `PROFILE: ${profile.join(', ')}\n`;
-      }
-    }
-
-    // Recent alerts
-    if (alerts && alerts.length > 0) {
-      const recentAlert = alerts[0];
-      context += `RECENT ALERT: ${recentAlert.message}\n`;
-    }
-
-    return context;
-  }
-
-  analyzeSpendingCategories(transactions) {
-    const categories = {};
-    
-    transactions.forEach(transaction => {
-      if (transaction.amount < 0 || transaction.transaction_type === 'Debit') {
-        // Simple category detection based on description
-        const description = transaction.description?.toLowerCase() || '';
-        let category = 'Other';
-        
-        if (description.includes('grocery') || description.includes('supermarket') || description.includes('food')) {
-          category = 'Groceries & Food';
-        } else if (description.includes('gas') || description.includes('fuel') || description.includes('transport')) {
-          category = 'Transportation';
-        } else if (description.includes('restaurant') || description.includes('dining')) {
-          category = 'Dining Out';
-        } else if (description.includes('utility') || description.includes('electric') || description.includes('water')) {
-          category = 'Utilities';
-        } else if (description.includes('rent') || description.includes('mortgage')) {
-          category = 'Housing';
-        } else if (description.includes('shopping') || description.includes('retail')) {
-          category = 'Shopping';
-        } else if (description.includes('medical') || description.includes('health')) {
-          category = 'Healthcare';
-        }
-        
-        categories[category] = (categories[category] || 0) + Math.abs(transaction.amount);
-      }
-    });
-    
-    return categories;
-  }
-
-  // Generate cache key from message and essential financial data
-  generateCacheKey(userMessage, financialData) {
-    const { balance, transactions } = financialData;
-    const totalBalance = balance?.reduce((sum, acc) => sum + acc.balance, 0) || 0;
-    const recentTransactionCount = transactions?.length || 0;
-    
-    // Create a simple hash of key financial indicators
-    const financialSignature = `${totalBalance}-${recentTransactionCount}`;
-    const messageKey = userMessage.toLowerCase().trim().substring(0, 50);
-    
-    return `${messageKey}-${financialSignature}`;
+  // Generate cache key from message only (simplified)
+  generateCacheKey(userMessage) {
+    return userMessage.toLowerCase().trim().substring(0, 50);
   }
 
   // Check if response is cached and still valid
@@ -427,7 +175,7 @@ Please provide a personalized response based on their specific financial situati
   async generateResponse(userMessage, financialData) {
     try {
       // Check cache first for common queries
-      const cacheKey = this.generateCacheKey(userMessage, financialData);
+      const cacheKey = this.generateCacheKey(userMessage);
       const cachedResponse = this.getCachedResponse(cacheKey);
       
       if (cachedResponse) {
@@ -468,7 +216,6 @@ Please provide a personalized response based on their specific financial situati
         response: text,
         model: 'gemini-1.5-flash',
         language: enrichmentResult.language,
-        fraudAlerts: enrichmentResult.fraudAlerts,
         cached: false,
         timestamp: new Date().toISOString()
       };
@@ -485,9 +232,17 @@ Please provide a personalized response based on their specific financial situati
   // Streaming response method for real-time output
   async generateStreamingResponse(userMessage, financialData) {
     try {
-      const enrichedPrompt = await this.enrichUserContext(userMessage, financialData);
+      const enrichmentResult = await this.enrichUserContext(userMessage, financialData);
       
-      const result = await this.model.generateContentStream(enrichedPrompt);
+      if (enrichmentResult.isRejected) {
+        return {
+          success: false,
+          error: 'Non-financial query rejected',
+          rejectionMessage: enrichmentResult.rejectionMessage
+        };
+      }
+      
+      const result = await this.model.generateContentStream(enrichmentResult.enrichedPrompt);
       
       return {
         success: true,
