@@ -31,7 +31,8 @@ class GeminiFinancialService {
         'تقاعد', 'معاش', 'تأمين', 'ضريبة', 'اقتصاد', 'تضخم', 'احتيال', 'أمان',
         'نصب', 'حماية', 'مشبوه', 'غير مصرح', 'بنوك مفتوحة', 'تقنية مالية',
         'بنوك رقمية', 'بنوك محمولة', 'بطاقة', 'سحب', 'إيداع', 'إنفاق', 'شراء', 'بيع',
-        'أظهر', 'عرض', 'اعرض'
+        'أظهر', 'عرض', 'اعرض', 'آخر', 'أخير', 'اخير', 'الأخيرة', 'الاخيرة', 'السابقة',
+        'أعطني', 'اعطني', 'أريد', 'اريد', 'إظهار', 'اظهار', 'عمليات', 'حركات'
       ]
     };
     
@@ -93,7 +94,7 @@ Be direct. Answer only what is asked.`;
 
   // Validate if message is finance-related
   isFinancialQuery(message) {
-    const lowerMessage = message.toLowerCase();
+    const lowerMessage = message.toLowerCase().trim();
     const isArabicText = this.isArabic(message);
     
     // Check for financial keywords
@@ -105,6 +106,14 @@ Be direct. Answer only what is asked.`;
       lowerMessage.includes(keyword.toLowerCase())
     );
     
+    // NEW RULE: Single word financial queries are always valid
+    const words = lowerMessage.split(/\s+/).filter(word => word.length > 0);
+    const isSingleWord = words.length === 1;
+    
+    if (isSingleWord && hasFinancialKeywords) {
+      return true; // Allow single financial words like "balance", "transactions", "savings"
+    }
+    
     // Check for rejected topics
     const rejectedKeywords = isArabicText ? 
       this.rejectedTopics.arabic : 
@@ -114,7 +123,7 @@ Be direct. Answer only what is asked.`;
       lowerMessage.includes(keyword.toLowerCase())
     );
     
-    // Additional context-based validation
+    // Additional context-based validation for multi-word queries
     const financialPhrases = isArabicText ? [
       'كيف يمكنني', 'ماذا عن', 'هل يجب', 'أريد أن', 'كم يجب'
     ] : [
